@@ -1,0 +1,45 @@
+{
+  "manifest_version": 3,
+  "name": "Pixlance — eBay Listing Optimizer",
+  "version": "1.0.0",
+  "description": "Auto-inject 'Import to Pixlance' on any eBay, AliExpress, or Amazon product page. One click → fully optimized eBay listing.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://www.ebay.com/*",
+    "https://www.ebay.co.uk/*",
+    "https://www.aliexpress.com/*",
+    "https://www.amazon.com/*",
+    "https://www.amazon.co.uk/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.ebay.com/itm/*",
+        "https://www.ebay.co.uk/itm/*",
+        "https://www.aliexpress.com/item/*",
+        "https://www.amazon.com/dp/*",
+        "https://www.amazon.co.uk/dp/*"
+      ],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}

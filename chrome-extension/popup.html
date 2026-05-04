@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    width: 320px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0f172a;
+    color: #e2e8f0;
+  }
+  .header {
+    background: linear-gradient(135deg, #0ea5e9, #0284c7);
+    padding: 20px;
+    text-align: center;
+  }
+  .logo {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: 900;
+    margin: 0 auto 10px;
+    color: white;
+  }
+  h1 { font-size: 18px; font-weight: 800; color: white; }
+  .tagline { font-size: 11px; color: rgba(255,255,255,0.8); margin-top: 4px; }
+  .body { padding: 16px; }
+  .status-badge {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #94a3b8;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; flex-shrink: 0; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .btn {
+    display: block;
+    width: 100%;
+    padding: 11px;
+    border-radius: 10px;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    text-align: center;
+    text-decoration: none;
+    margin-bottom: 8px;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn-primary { background: #0ea5e9; color: white; }
+  .btn-outline { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; }
+  .features {
+    margin-top: 14px;
+    space-y: 4px;
+  }
+  .feature {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #64748b;
+    padding: 3px 0;
+  }
+  .feature-icon { color: #0ea5e9; font-size: 12px; }
+  .footer {
+    border-top: 1px solid #1e293b;
+    padding: 10px 16px;
+    font-size: 10px;
+    color: #475569;
+    text-align: center;
+  }
+  a { color: #0ea5e9; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo">P</div>
+  <h1>Pixlance</h1>
+  <p class="tagline">eBay AI Listing Optimizer</p>
+</div>
+<div class="body">
+  <div class="status-badge">
+    <div class="dot"></div>
+    Active on eBay, AliExpress &amp; Amazon
+  </div>
+  <a href="https://pixlance.pages.dev/listing" target="_blank" class="btn btn-primary">
+    ⚡ Open Listing Generator
+  </a>
+  <a href="https://pixlance.pages.dev" target="_blank" class="btn btn-outline">
+    🏠 Open Pixlance Dashboard
+  </a>
+  <div class="features">
+    <div class="feature"><span class="feature-icon">✓</span> Auto-injects button on product pages</div>
+    <div class="feature"><span class="feature-icon">✓</span> One click → optimized eBay listing</div>
+    <div class="feature"><span class="feature-icon">✓</span> Live competitor price intelligence</div>
+    <div class="feature"><span class="feature-icon">✓</span> AI title optimizer (80-char eBay rule)</div>
+    <div class="feature"><span class="feature-icon">✓</span> Smart image ranking &amp; scoring</div>
+    <div class="feature"><span class="feature-icon">✓</span> Export CSV + ZIP for bulk upload</div>
+  </div>
+</div>
+<div class="footer">
+  <a href="https://pixlance.pages.dev" target="_blank">pixlance.pages.dev</a> · v1.0.0
+</div>
+</body>
+</html>

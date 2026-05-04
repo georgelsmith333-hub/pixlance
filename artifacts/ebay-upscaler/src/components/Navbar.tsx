@@ -17,6 +17,8 @@ const toolLinks = [
   { href: "/ai-edit", label: "AI Edit" },
   { href: "/studio", label: "🎨 Studio (All-in-One)" },
   { href: "/scraper", label: "🔍 Image Scraper" },
+  { href: "/listing", label: "⚡ Listing Generator" },
+  { href: "/history", label: "📋 Saved Listings" },
 ];
 
 const primaryLinks = [

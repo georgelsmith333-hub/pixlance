@@ -1,6 +1,0 @@
-name = "pixlance"
-pages_build_output_dir = "artifacts/ebay-upscaler/dist/public"
-compatibility_date = "2024-12-01"
-
-[env.production]
-name = "pixlance"

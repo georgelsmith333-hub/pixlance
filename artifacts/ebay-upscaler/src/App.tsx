@@ -19,9 +19,12 @@ import Login from "@/pages/login";
 import Register from "@/pages/register";
 import Studio from "@/pages/studio";
 import Scraper from "@/pages/scraper";
+import ListingGenerator from "@/pages/listing";
+import History from "@/pages/history";
 import Navbar from "@/components/Navbar";
 import AnnouncementBar from "@/components/AnnouncementBar";
 import AdSlot from "@/components/AdSlot";
+import ExpiryWarning from "@/components/ExpiryWarning";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +51,8 @@ function Router() {
       <Route path="/register" component={Register} />
       <Route path="/studio" component={Studio} />
       <Route path="/scraper" component={Scraper} />
+      <Route path="/listing" component={ListingGenerator} />
+      <Route path="/history" component={History} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -60,6 +65,7 @@ function App() {
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
           <div className="min-h-screen bg-background text-foreground flex flex-col">
             <AnnouncementBar />
+            <ExpiryWarning />
             <Navbar />
             <AdSlot placement="header" />
             <main className="flex-1">

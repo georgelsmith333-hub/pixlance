@@ -7,6 +7,7 @@ import progressRouter from "./progress";
 import authRouter from "./auth";
 import studioRouter from "./studio";
 import scraperRouter from "./scraper";
+import ebayRouter from "./ebay";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(toolsRouter);
 router.use(progressRouter);
 router.use(studioRouter);
 router.use(scraperRouter);
+router.use(ebayRouter);
 
 export default router;
