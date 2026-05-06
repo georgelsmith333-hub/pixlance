@@ -5,7 +5,7 @@ services:
     region: ohio
     plan: free
     buildCommand: npm install && tsc -p tsconfig.server.json
-    startCommand: node dist/server/src/index.js
+    startCommand: node dist/index.js
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV
