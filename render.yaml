@@ -1,18 +1,21 @@
 services:
-  - type: web
-    name: pixlance-api
-    env: node
-    region: ohio
-    plan: free
-    buildCommand: npm install && ./node_modules/.bin/esbuild server/src/index.ts --bundle --platform=node --target=node20 --format=esm --packages=external --outfile=dist/index.js
-    startCommand: node dist/index.js
-    healthCheckPath: /api/health
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: NODE_VERSION
-        value: "20.11.0"
-      - key: NEON_URL
-        sync: false
-      - key: SERVE_STATIC
-        value: "false"
+    - type: web
+      name: pixlance-api
+      env: node
+      region: ohio
+      plan: free
+      buildCommand: npm ci && tsc -p tsconfig.server.json
+      startCommand: node dist/server/src/index.js
+      healthCheckPath: /api/health
+      envVars:
+        - key: NODE_ENV
+          value: production
+        - key: NODE_VERSION
+          value: "20.11.0"
+        - key: NEON_URL
+          sync: false
+        - key: SERVE_STATIC
+          value: "false"
+        - key: ADMIN_TOKEN
+          sync: false
+  
