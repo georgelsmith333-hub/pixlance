@@ -4,8 +4,11 @@
  * Auto-selects best model per task, rotates on failure
  */
 
-const POLLINATIONS_TEXT  = "https://text.pollinations.ai";
+const POLLINATIONS_TEXT   = "https://text.pollinations.ai";
 const POLLINATIONS_OPENAI = "https://text.pollinations.ai/openai";
+// In production, AI calls are routed through the CF Pages Worker (Cloudflare IP)
+// to avoid Render's IP being rate-limited by Pollinations.
+const AI_PROXY_URL = process.env.AI_PROXY_URL ?? null;
 
 export const MODELS = {
   gpt4mini:   { id: "openai",            name: "GPT-4o Mini",       best: ["listing","title","seo","description"] },
@@ -39,6 +42,20 @@ function getBestModel(task: string): string[] {
 }
 
 const delay = (ms: number) => new Promise(r => setTimeout(r, ms));
+
+function extractContent(text: string): string {
+  try {
+    const json = JSON.parse(text) as Record<string, unknown>;
+    const choices = json.choices as Array<{ message?: { content?: string } }> | undefined;
+    if (choices?.[0]?.message?.content) return choices[0].message!.content!.trim();
+    if (json.role === "assistant") {
+      const content = json.content ?? json.reasoning_content;
+      if (typeof content === "string" && content.trim()) return content.trim();
+    }
+    if (typeof json.content === "string" && json.content.trim()) return json.content.trim();
+  } catch { /* raw text */ }
+  return text.trim();
+}
 
 export async function callAI(
   prompt: string,
@@ -105,21 +122,47 @@ async function callModel(prompt: string, modelId: string, systemPrompt?: string)
     "User-Agent": "Mozilla/5.0 (compatible; Pixlance/1.0)",
   };
 
-  // Try the OpenAI-compat endpoint FIRST (more reliable, different rate-limit pool)
+  const payload = { messages, model: modelId, seed, private: true };
+
+  // If an AI proxy URL is configured (CF Pages Worker), use it to avoid Render IP rate-limits
+  if (AI_PROXY_URL) {
+    let res = await fetch(AI_PROXY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, _endpoint: "openai" }),
+      signal: AbortSignal.timeout(50000),
+    });
+
+    if (res.status === 429 || !res.ok) {
+      await delay(1500);
+      res = await fetch(AI_PROXY_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...payload, seed: seed + 1, _endpoint: "text" }),
+        signal: AbortSignal.timeout(50000),
+      });
+    }
+
+    if (!res.ok) throw new Error(`HTTP ${res.status} from model ${modelId}`);
+    const text = await res.text();
+    if (!text?.trim()) throw new Error(`Empty response from ${modelId}`);
+    return extractContent(text);
+  }
+
+  // Direct Pollinations call (local dev or non-Render environments)
   let res = await fetch(POLLINATIONS_OPENAI, {
     method: "POST",
     headers: commonHeaders,
-    body: JSON.stringify({ messages, model: modelId, seed, private: true }),
+    body: JSON.stringify(payload),
     signal: AbortSignal.timeout(45000),
   });
 
-  // On 429 or error, fall back to the raw text endpoint
   if (res.status === 429 || !res.ok) {
     await delay(1500);
     res = await fetch(POLLINATIONS_TEXT, {
       method: "POST",
       headers: commonHeaders,
-      body: JSON.stringify({ messages, model: modelId, seed: seed + 1, private: true }),
+      body: JSON.stringify({ ...payload, seed: seed + 1 }),
       signal: AbortSignal.timeout(45000),
     });
   }
@@ -127,23 +170,7 @@ async function callModel(prompt: string, modelId: string, systemPrompt?: string)
   if (!res.ok) throw new Error(`HTTP ${res.status} from model ${modelId}`);
   const text = await res.text();
   if (!text?.trim()) throw new Error(`Empty response from ${modelId}`);
-
-  // Some models return OpenAI chat completion JSON format instead of plain text.
-  // Detect and unwrap the actual content.
-  try {
-    const json = JSON.parse(text) as Record<string, unknown>;
-    const choices = json.choices as Array<{ message?: { content?: string } }> | undefined;
-    if (choices?.[0]?.message?.content) return choices[0].message!.content!.trim();
-    if (json.role === "assistant") {
-      const content = json.content ?? json.reasoning_content;
-      if (typeof content === "string" && content.trim()) return content.trim();
-    }
-    if (typeof json.content === "string" && json.content.trim()) return json.content.trim();
-  } catch {
-    // Not JSON — return raw text (normal for most models)
-  }
-
-  return text.trim();
+  return extractContent(text);
 }
 
 export async function callAIJSON<T = Record<string, unknown>>(
