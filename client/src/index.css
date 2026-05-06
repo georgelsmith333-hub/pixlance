@@ -1,0 +1,88 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 13% 5%;
+    --foreground: 220 13% 92%;
+    --card: 220 13% 8%;
+    --card-foreground: 220 13% 92%;
+    --popover: 220 13% 7%;
+    --popover-foreground: 220 13% 92%;
+    --primary: 221 83% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 13% 12%;
+    --secondary-foreground: 220 13% 70%;
+    --muted: 220 13% 12%;
+    --muted-foreground: 220 10% 42%;
+    --accent: 220 13% 15%;
+    --accent-foreground: 220 13% 90%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 14%;
+    --input: 220 13% 14%;
+    --ring: 221 83% 58%;
+    --radius: 0.625rem;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { @apply bg-background text-foreground antialiased; font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: hsl(var(--muted-foreground)); }
+
+/* Shimmer skeleton loader */
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.shimmer {
+  background: linear-gradient(90deg, hsl(var(--secondary)) 25%, hsl(var(--accent)) 50%, hsl(var(--secondary)) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.8s infinite;
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, hsl(var(--primary)), #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Glow effects */
+.glow { box-shadow: 0 0 30px hsl(var(--primary) / 0.2), 0 0 60px hsl(var(--primary) / 0.08); }
+.glow-sm { box-shadow: 0 0 12px hsl(var(--primary) / 0.25); }
+
+/* Score ring */
+.score-ring { stroke-dasharray: 251.2; transition: stroke-dashoffset 1s ease; }
+
+/* Glass card */
+.glass {
+  background: rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* Pulse dot — live indicator */
+.live-dot { animation: pulse-dot 2s ease-in-out infinite; }
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* Fade-in animation used across pages */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in { animation: fade-in 0.2s ease-out forwards; }

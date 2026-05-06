@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: pixlance-api
+    env: node
+    region: ohio
+    plan: free
+    buildCommand: npm install && tsc -p tsconfig.server.json
+    startCommand: node dist/server/src/index.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEON_URL
+        sync: false
+      - key: SERVE_STATIC
+        value: "false"
