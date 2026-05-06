@@ -18,32 +18,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10
-
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
-          cache: pnpm
+          node-version: 20
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm install
 
       - name: Build frontend
-        working-directory: artifacts/ebay-upscaler
+        run: npx vite build
         env:
           NODE_ENV: production
-          BASE_PATH: /
-          PORT: 3000
-        run: pnpm run build
 
       - name: Deploy to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
-          command: pages deploy dist/public --project-name=pixlance --commit-dirty=true
-        working-directory: artifacts/ebay-upscaler
+          command: pages deploy dist/client --project-name=pixlance --commit-dirty=true
