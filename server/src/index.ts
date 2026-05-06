@@ -7,6 +7,8 @@ import listingsRouter from "./routes/listings.js";
 import imagesRouter from "./routes/images.js";
 import bulkRouter from "./routes/bulk.js";
 import historyRouter from "./routes/history.js";
+import adminRouter from "./routes/admin.js";
+import exportRouter from "./routes/export.js";
 import { getModelStats } from "./ai/models.js";
 import { runMigrations } from "./db/index.js";
 
@@ -17,9 +19,10 @@ const isProd = process.env.NODE_ENV === "production";
 const serveStatic = process.env.SERVE_STATIC !== "false";
 
 app.use(cors({ origin: true, credentials: true }));
-app.use(express.json({ limit: "50mb" }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: "100mb" }));
+app.use(express.urlencoded({ extended: true, limit: "100mb" }));
 
+// Request logger
 app.use((req, _res, next) => {
   if (!req.path.includes("/health")) {
     console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
@@ -27,10 +30,13 @@ app.use((req, _res, next) => {
   next();
 });
 
+// Routes
 app.use("/api", listingsRouter);
 app.use("/api", imagesRouter);
 app.use("/api", bulkRouter);
 app.use("/api", historyRouter);
+app.use("/api", adminRouter);
+app.use("/api", exportRouter);
 
 app.get("/api/health", (_req, res) => {
   res.json({ status: "ok", uptime: process.uptime(), timestamp: new Date().toISOString() });
@@ -39,8 +45,14 @@ app.get("/api/health", (_req, res) => {
 app.get("/api/stats", (_req, res) => {
   res.json({
     models: getModelStats(),
-    features: ["listing-gen", "url-scrape", "bulk-zip", "image-upscale", "banner", "watermark", "seo-analysis", "keyword-research", "sold-prices", "competitor-spy", "listing-history"],
-    version: "2.0.0",
+    features: [
+      "listing-gen", "url-scrape", "bulk-zip", "image-upscale",
+      "banner", "watermark", "seo-analysis", "keyword-research",
+      "sold-prices", "competitor-spy", "listing-history",
+      "full-export-zip", "temu-scrape", "aliexpress-scrape",
+      "admin-panel", "usage-tracking",
+    ],
+    version: "3.0.0",
   });
 });
 
@@ -56,12 +68,12 @@ if (isProd && serveStatic) {
   }
 }
 
-// Run DB migrations on startup (non-blocking — fails gracefully if no DB_URL)
+// Run DB migrations on startup
 runMigrations().catch(err => console.warn("[DB] Migration failed:", err.message));
 
 app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ Pixlance API running on http://0.0.0.0:${PORT} [${isProd ? "production" : "development"}]`);
-  console.log(`📦 Features: Listing Gen | Image Processing | Bulk | Scraper | SEO | History`);
+  console.log(`✅ Pixlance API v3.0 running on http://0.0.0.0:${PORT} [${isProd ? "production" : "development"}]`);
+  console.log(`📦 Features: Listing Gen | Image Processing | Bulk | Scraper (AliExpress+Temu+Amazon) | SEO | History | Admin | ZIP Export`);
   console.log(`🗄️  Database: ${process.env.NEON_URL ? "Neon PostgreSQL connected" : "No DB — localStorage mode"}`);
   console.log(`🌐 Static serving: ${isProd && serveStatic ? "enabled" : "disabled (API-only mode)"}`);
 });
