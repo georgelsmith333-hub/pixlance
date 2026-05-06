@@ -105,18 +105,18 @@ async function callModel(prompt: string, modelId: string, systemPrompt?: string)
     "User-Agent": "Mozilla/5.0 (compatible; Pixlance/1.0)",
   };
 
-  // Try the standard text endpoint first
-  let res = await fetch(POLLINATIONS_TEXT, {
+  // Try the OpenAI-compat endpoint FIRST (more reliable, different rate-limit pool)
+  let res = await fetch(POLLINATIONS_OPENAI, {
     method: "POST",
     headers: commonHeaders,
     body: JSON.stringify({ messages, model: modelId, seed, private: true }),
     signal: AbortSignal.timeout(45000),
   });
 
-  // On 429, retry immediately with the OpenAI-compatible endpoint
-  if (res.status === 429) {
-    await delay(2000);
-    res = await fetch(POLLINATIONS_OPENAI, {
+  // On 429 or error, fall back to the raw text endpoint
+  if (res.status === 429 || !res.ok) {
+    await delay(1500);
+    res = await fetch(POLLINATIONS_TEXT, {
       method: "POST",
       headers: commonHeaders,
       body: JSON.stringify({ messages, model: modelId, seed: seed + 1, private: true }),
