@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { Copy, Check, Download, ChevronDown, ChevronUp, AlertTriangle, Sparkles } from "lucide-react";
+import { Copy, Check, Download, ChevronDown, ChevronUp, AlertTriangle, Sparkles, Package, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import SEOScoreRing from "@/components/SEOScoreRing";
-import { cn, scoreColor, scoreBg, countChars } from "@/lib/utils";
+import { cn, scoreColor, countChars } from "@/lib/utils";
 import { toast } from "sonner";
 
 export interface GeneratedListing {
@@ -38,6 +38,8 @@ interface Props {
   listing: GeneratedListing;
   seoReport?: SEOReport;
   onExport?: () => void;
+  storeName?: string;
+  colorScheme?: string;
 }
 
 function CopyBtn({ text, label }: { text: string; label?: string }) {
@@ -52,12 +54,13 @@ function CopyBtn({ text, label }: { text: string; label?: string }) {
   );
 }
 
-export default function ListingCard({ listing, seoReport, onExport }: Props) {
+export default function ListingCard({ listing, seoReport, onExport, storeName = "My eBay Store", colorScheme = "blue" }: Props) {
   const [expanded, setExpanded] = useState(false);
+  const [zipLoading, setZipLoading] = useState(false);
   const titleInfo = countChars(listing.title ?? "");
   const score = seoReport?.overallScore ?? listing.seoScore ?? 0;
 
-  const exportListing = () => {
+  const exportTxt = () => {
     const text = [
       `TITLE: ${listing.title}`,
       listing.subtitle ? `SUBTITLE: ${listing.subtitle}` : "",
@@ -77,7 +80,54 @@ export default function ListingCard({ listing, seoReport, onExport }: Props) {
     a.download = `pixlance_listing_${Date.now()}.txt`;
     a.click();
     onExport?.();
-    toast.success("Listing exported!");
+    toast.success("Listing exported as text!");
+  };
+
+  const exportZip = async () => {
+    setZipLoading(true);
+    try {
+      const res = await fetch("/api/export/from-listing", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          listing: {
+            title: listing.title,
+            subtitle: listing.subtitle,
+            category: listing.category,
+            condition: listing.condition ?? "New",
+            price: listing.price ?? 0,
+            description: listing.description ?? "",
+            itemSpecifics: listing.itemSpecifics ?? {},
+            keywords: listing.keywords ?? [],
+            tags: listing.tags ?? [],
+            shippingRecommendation: listing.shippingRecommendation,
+            seoScore: score,
+            cassiniTips: listing.cassiniTips ?? [],
+          },
+          storeName,
+          colorScheme,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json() as { error: string };
+        throw new Error(err.error ?? "Export failed");
+      }
+
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `pixlance_${listing.title?.slice(0, 30).replace(/[^a-z0-9]/gi, "_").toLowerCase() ?? "listing"}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Full listing package downloaded!");
+      onExport?.();
+    } catch (err) {
+      toast.error(String(err));
+    } finally {
+      setZipLoading(false);
+    }
   };
 
   return (
@@ -226,9 +276,13 @@ export default function ListingCard({ listing, seoReport, onExport }: Props) {
       )}
 
       {/* Footer actions */}
-      <div className="px-5 py-3 border-t border-border flex items-center gap-2 bg-secondary/10">
-        <Button size="sm" className="gap-1.5 text-xs" onClick={exportListing}>
-          <Download className="w-3.5 h-3.5" /> Export
+      <div className="px-5 py-3 border-t border-border flex items-center gap-2 flex-wrap bg-secondary/10">
+        <Button size="sm" className="gap-1.5 text-xs" onClick={() => void exportZip()} disabled={zipLoading}>
+          {zipLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Package className="w-3.5 h-3.5" />}
+          {zipLoading ? "Packaging..." : "Export ZIP"}
+        </Button>
+        <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={exportTxt}>
+          <Download className="w-3.5 h-3.5" /> Export TXT
         </Button>
         <Button variant="outline" size="sm" className="text-xs gap-1.5"
           onClick={() => { void navigator.clipboard.writeText(listing.title ?? ""); toast.success("Title copied!"); }}>
