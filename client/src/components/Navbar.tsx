@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { Zap, Menu, X, LayoutDashboard, Wand2, Image, Package, Search, Settings, History } from "lucide-react";
+import { Zap, Menu, X, LayoutDashboard, Wand2, Image, Package, Search, Settings, History, Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 
@@ -46,14 +46,22 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden md:flex items-center gap-3">
+        <div className="hidden md:flex items-center gap-2">
           <div className="text-xs text-muted-foreground flex items-center gap-1.5">
             <span className="w-1.5 h-1.5 rounded-full bg-green-500 live-dot" />
-            7 Models Auto-Rotating
+            7 AI Models
           </div>
           <Link href="/settings">
             <button className="p-2 rounded-lg hover:bg-secondary transition-colors text-muted-foreground hover:text-foreground">
               <Settings className="w-4 h-4" />
+            </button>
+          </Link>
+          <Link href="/admin">
+            <button className={cn(
+              "p-2 rounded-lg transition-colors",
+              location === "/admin" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            )}>
+              <Shield className="w-4 h-4" />
             </button>
           </Link>
         </div>
@@ -75,6 +83,14 @@ export default function Navbar() {
               </button>
             </Link>
           ))}
+          <Link href="/admin" onClick={() => setOpen(false)}>
+            <button className={cn(
+              "w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+              location === "/admin" ? "text-primary bg-primary/10" : "text-muted-foreground hover:text-foreground hover:bg-secondary"
+            )}>
+              <Shield className="w-4 h-4" />Admin Panel
+            </button>
+          </Link>
         </div>
       )}
     </header>
