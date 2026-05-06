@@ -95,6 +95,25 @@ async function callModel(prompt: string, modelId: string, systemPrompt?: string)
   if (!res.ok) throw new Error(`HTTP ${res.status} from model ${modelId}`);
   const text = await res.text();
   if (!text?.trim()) throw new Error(`Empty response from ${modelId}`);
+
+  // Some models (deepseek-r1, etc.) return OpenAI chat completion JSON format
+  // instead of plain text. Extract the actual content from it.
+  try {
+    const json = JSON.parse(text) as Record<string, unknown>;
+    // OpenAI / Pollinations chat completion format
+    const choices = json.choices as Array<{ message?: { content?: string } }> | undefined;
+    if (choices?.[0]?.message?.content) return choices[0].message!.content!.trim();
+    // Simple role/content format
+    if (json.role === "assistant") {
+      const content = json.content ?? json.reasoning_content;
+      if (typeof content === "string" && content.trim()) return content.trim();
+    }
+    // Has a content field at top level
+    if (typeof json.content === "string" && json.content.trim()) return json.content.trim();
+  } catch {
+    // Not JSON — return raw text (expected for most models)
+  }
+
   return text.trim();
 }
 
