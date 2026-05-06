@@ -1,9 +1,11 @@
 /**
- * Client-side Pollinations.ai caller
- * AI calls go directly from the user's browser (unique IP per user).
- * This bypasses shared server IP rate limits entirely.
+ * Client-side AI caller
+ * Primary: Cloudflare Pages AI proxy (pixlance.pages.dev/api/ai-proxy)
+ *   — runs on CF edge, rotating IPs, zero rate limits
+ * Fallback: Direct Pollinations.ai (user's browser IP)
  */
 
+const CF_PROXY = "https://pixlance.pages.dev/api/ai-proxy";
 const POLLINATIONS_URL = "https://text.pollinations.ai/openai";
 
 const MODELS_BY_TASK: Record<string, string> = {
@@ -14,6 +16,8 @@ const MODELS_BY_TASK: Record<string, string> = {
   research:    "deepseek-r1",
   bulk:        "llama",
   json:        "openai",
+  seo:         "openai",
+  analysis:    "deepseek-r1",
 };
 
 function extractContent(text: string): string {
@@ -34,41 +38,67 @@ export async function callAIClient(
   prompt: string,
   task: string = "listing",
   systemPrompt?: string,
-  timeoutMs = 60000
+  timeoutMs = 65000
 ): Promise<string> {
   const model = MODELS_BY_TASK[task] ?? "openai";
   const messages = [
     ...(systemPrompt ? [{ role: "system", content: systemPrompt }] : []),
     { role: "user", content: prompt },
   ];
+  const payload = { messages, model, private: true, seed: Math.floor(Math.random() * 999999) };
 
+  // ── 1. Try CF Pages proxy (edge IP — no rate limits) ──────────────────────
+  try {
+    const res = await fetch(CF_PROXY, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (res.ok) {
+      const txt = await res.text();
+      const content = extractContent(txt);
+      if (content.length > 4) return content;
+    }
+  } catch { /* fall through to direct */ }
+
+  // ── 2. Try CF proxy with fallback model ───────────────────────────────────
+  try {
+    const res = await fetch(CF_PROXY, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, model: "llama" }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (res.ok) {
+      const txt = await res.text();
+      const content = extractContent(txt);
+      if (content.length > 4) return content;
+    }
+  } catch { /* fall through */ }
+
+  // ── 3. Direct Pollinations (browser IP — last resort) ────────────────────
+  await new Promise(r => setTimeout(r, 1000));
   const res = await fetch(POLLINATIONS_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ messages, model, private: true, seed: Math.floor(Math.random() * 999999) }),
+    body: JSON.stringify(payload),
     signal: AbortSignal.timeout(timeoutMs),
   });
 
   if (!res.ok) {
-    // 429 = rate limited. Try fallback model.
-    if (res.status === 429) {
-      await new Promise(r => setTimeout(r, 2000));
-      const fallbackRes = await fetch(POLLINATIONS_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages, model: "llama", private: true, seed: Math.floor(Math.random() * 999999) }),
-        signal: AbortSignal.timeout(timeoutMs),
-      });
-      if (fallbackRes.ok) {
-        const txt = await fallbackRes.text();
-        return extractContent(txt);
-      }
-    }
-    throw new Error(`AI request failed (HTTP ${res.status})`);
+    // One more retry with llama
+    const retry = await fetch(POLLINATIONS_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...payload, model: "llama" }),
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!retry.ok) throw new Error(`AI request failed (HTTP ${retry.status})`);
+    return extractContent(await retry.text());
   }
 
-  const txt = await res.text();
-  return extractContent(txt);
+  return extractContent(await res.text());
 }
 
 export async function callAIClientJSON<T = Record<string, unknown>>(
@@ -78,15 +108,19 @@ export async function callAIClientJSON<T = Record<string, unknown>>(
 ): Promise<T> {
   const jsonPrompt = `${prompt}\n\nIMPORTANT: Respond with ONLY valid JSON. No markdown, no explanation, no code blocks. Pure JSON only.`;
   const raw = await callAIClient(jsonPrompt, task, systemPrompt);
+
+  // Extract JSON from response
   const match = raw.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
   if (!match) throw new Error("No JSON in AI response");
+
   try {
     return JSON.parse(match[0]) as T;
   } catch {
-    // Common AI JSON fixes: trailing commas, unescaped chars
+    // Fix common AI JSON issues: trailing commas, tab chars
     const fixed = match[0]
       .replace(/,(\s*[}\]])/g, "$1")
-      .replace(/\t/g, "  ");
+      .replace(/\t/g, "  ")
+      .replace(/[\x00-\x1f\x7f]/g, " ");
     return JSON.parse(fixed) as T;
   }
 }
