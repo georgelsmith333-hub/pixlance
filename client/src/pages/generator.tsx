@@ -46,13 +46,36 @@ export default function Generator() {
 
       if (mode === "url") {
         if (!url.trim()) { toast.error("Enter a supplier URL"); return; }
-        const res = await fetch("/api/listings/from-url", {
+        // Step 1: Scrape URL on server + get prompt back (no server AI call)
+        const scrapeRes = await fetch("/api/listings/from-url", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url: url.trim(), marketplace }),
+          body: JSON.stringify({ url: url.trim(), marketplace, mode: "get-prompt" }),
         });
-        data = await res.json() as GenerateResult;
-        if (!res.ok) throw new Error((data as unknown as { error: string }).error);
+        if (!scrapeRes.ok) throw new Error("Failed to scrape URL");
+        const { prompt, systemPrompt, warning, scraped, keywords } = await scrapeRes.json() as {
+          prompt: string; systemPrompt: string; warning?: string;
+          scraped: unknown; keywords: string[];
+        };
+        if (warning) toast.warning(warning);
+        else toast.success("Page scraped successfully");
+
+        // Step 2: Call AI directly from browser (user's unique IP — no rate limits)
+        const rawAI = await callAIClient(
+          `${prompt}\n\nIMPORTANT: Respond with ONLY valid JSON. No markdown, no explanation, no code blocks. Pure JSON only.`,
+          "listing",
+          systemPrompt,
+          65000
+        );
+
+        // Step 3: Parse + SEO score on server
+        const parseRes = await fetch("/api/listings/parse", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rawAI }),
+        });
+        data = await parseRes.json() as GenerateResult;
+        if (!parseRes.ok) throw new Error((data as unknown as { error: string }).error);
         toast.success("Scraped & generated listing!");
       } else {
         const product: Record<string, unknown> = { condition, marketplace };
