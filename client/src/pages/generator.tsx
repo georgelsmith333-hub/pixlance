@@ -173,10 +173,10 @@ export default function Generator() {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2 pt-1">
-                {["AliExpress", "Amazon", "Alibaba", "eBay"].map(s => (
+                {["AliExpress", "Temu", "Amazon", "Alibaba", "eBay", "DHgate", "SHEIN", "Wish"].map(s => (
                   <span key={s} className="text-xs px-2 py-0.5 bg-secondary rounded-full text-muted-foreground">{s}</span>
                 ))}
-                <span className="text-xs text-muted-foreground">and any product page</span>
+                <span className="text-xs text-muted-foreground">+ any product page</span>
               </div>
             </div>
           )}
