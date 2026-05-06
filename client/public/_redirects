@@ -1,1 +1,6 @@
+# Cloudflare Pages redirects
+# Proxy all API calls to Render backend
+/api/* https://pixlance-api.onrender.com/api/:splat 200
+
+# SPA fallback — all other paths serve index.html
 /* /index.html 200
