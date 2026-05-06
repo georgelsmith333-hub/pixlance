@@ -62,7 +62,7 @@ runMigrations().catch(err => console.warn("[DB] Migration failed:", err.message)
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ Pixlance API running on http://0.0.0.0:${PORT} [${isProd ? "production" : "development"}]`);
   console.log(`📦 Features: Listing Gen | Image Processing | Bulk | Scraper | SEO | History`);
-  console.log(`🗄️  Database: ${process.env.DATABASE_URL ? "Neon PostgreSQL connected" : "No DB — localStorage mode"}`);
+  console.log(`🗄️  Database: ${process.env.NEON_URL ? "Neon PostgreSQL connected" : "No DB — localStorage mode"}`);
   console.log(`🌐 Static serving: ${isProd && serveStatic ? "enabled" : "disabled (API-only mode)"}`);
 });
 
