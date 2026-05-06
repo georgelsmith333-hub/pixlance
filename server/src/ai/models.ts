@@ -83,9 +83,13 @@ async function callModel(prompt: string, modelId: string, systemPrompt?: string)
 
   const res = await fetch(POLLINATIONS_BASE, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "Referer": "https://pixlance.pages.dev",
+      "Origin": "https://pixlance.pages.dev",
+    },
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(40000),
+    signal: AbortSignal.timeout(45000),
   });
 
   if (!res.ok) throw new Error(`HTTP ${res.status} from model ${modelId}`);
