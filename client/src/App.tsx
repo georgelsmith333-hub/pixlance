@@ -10,6 +10,7 @@ import Bulk from "@/pages/bulk";
 import Research from "@/pages/research";
 import HistoryPage from "@/pages/history";
 import SettingsPage from "@/pages/settings";
+import AdminPanel from "@/pages/admin";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 60_000, retry: 1 } },
@@ -40,6 +41,7 @@ export default function App() {
               <Route path="/research" component={Research} />
               <Route path="/history" component={HistoryPage} />
               <Route path="/settings" component={SettingsPage} />
+              <Route path="/admin" component={AdminPanel} />
               <Route component={NotFound} />
             </Switch>
           </main>
