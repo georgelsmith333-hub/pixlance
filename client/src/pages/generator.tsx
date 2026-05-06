@@ -13,6 +13,7 @@ import ImageDropzone from "@/components/ImageDropzone";
 import { toast } from "sonner";
 import { cn, MARKETPLACE_OPTIONS, CONDITION_OPTIONS } from "@/lib/utils";
 import { saveToHistory } from "@/lib/history";
+import { callAIClient } from "@/lib/ai";
 
 type InputMode = "keyword" | "url" | "manual" | "image";
 
@@ -58,17 +59,35 @@ export default function Generator() {
         if (mode === "keyword") { product.title = keyword; product.keywords = [keyword]; }
         if (mode === "manual") { product.title = manualTitle; product.description = manualDesc; product.brand = brand; }
         if (mode === "image" && images.length) {
-          // Submit image with description
           product.title = images[0].name.replace(/\.[^.]+$/, "").replace(/[-_]/g, " ");
           product.keywords = [product.title as string];
         }
-        const res = await fetch("/api/listings/generate", {
+
+        // Step 1: Get the AI prompt from server (fast, no AI call)
+        const promptRes = await fetch("/api/listings/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ product, marketplace }),
+          body: JSON.stringify({ product, marketplace, mode: "get-prompt" }),
         });
-        data = await res.json() as GenerateResult;
-        if (!res.ok) throw new Error((data as unknown as { error: string }).error);
+        if (!promptRes.ok) throw new Error("Failed to build prompt");
+        const { prompt, systemPrompt } = await promptRes.json() as { prompt: string; systemPrompt: string };
+
+        // Step 2: Call Pollinations directly from browser (user's unique IP — no rate limits)
+        const rawAI = await callAIClient(
+          `${prompt}\n\nIMPORTANT: Respond with ONLY valid JSON. No markdown, no explanation, no code blocks. Pure JSON only.`,
+          "listing",
+          systemPrompt,
+          65000
+        );
+
+        // Step 3: Parse result on server (SEO scoring, validation)
+        const parseRes = await fetch("/api/listings/parse", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rawAI }),
+        });
+        data = await parseRes.json() as GenerateResult;
+        if (!parseRes.ok) throw new Error((data as unknown as { error: string }).error);
         toast.success("Listing generated!");
       }
       setResult(data);

@@ -441,7 +441,7 @@ router.post("/listings/generate", async (req, res) => {
     product: ProductData;
     marketplace?: string;
     tone?: string;
-    mode?: "full" | "title" | "description" | "keywords";
+    mode?: "full" | "title" | "description" | "keywords" | "get-prompt";
   };
 
   if (!product || (!product.title && !product.description && !product.keywords?.length)) {
@@ -468,6 +468,13 @@ router.post("/listings/generate", async (req, res) => {
       const prompt = buildDescriptionPrompt(product, "ebay");
       const result = await callAI(prompt, "description", SYSTEM_PROMPTS.listing);
       res.json({ description: result });
+      return;
+    }
+
+    // "get-prompt" mode: client calls AI itself (avoids server IP rate limits)
+    if (mode === "get-prompt") {
+      const prompt = buildListingPrompt(product, { marketplace, tone });
+      res.json({ prompt, systemPrompt: SYSTEM_PROMPTS.listing, task: "listing" });
       return;
     }
 
@@ -500,6 +507,33 @@ router.post("/listings/generate", async (req, res) => {
       category: listing.category,
     });
 
+    res.json({ listing, seoReport, generatedAt: Date.now() });
+  } catch (err) {
+    res.status(500).json({ error: String(err) });
+  }
+});
+
+// Parse raw AI text into formatted listing (used when client calls AI directly)
+router.post("/listings/parse", async (req, res) => {
+  const { rawAI } = req.body as { rawAI: string };
+  if (!rawAI?.trim()) { res.status(400).json({ error: "rawAI text required" }); return; }
+  try {
+    const match = rawAI.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error("No JSON found in AI response");
+    let listing: Record<string, unknown>;
+    try {
+      listing = JSON.parse(match[0]) as Record<string, unknown>;
+    } catch {
+      const fixed = match[0].replace(/,(\s*[}\]])/g, "$1");
+      listing = JSON.parse(fixed) as Record<string, unknown>;
+    }
+    const seoReport = generateSEOReport({
+      title: (listing.title as string) ?? "",
+      description: (listing.description as string) ?? "",
+      itemSpecifics: (listing.itemSpecifics as Record<string, string>) ?? {},
+      price: listing.price as number | undefined,
+      category: listing.category as string | undefined,
+    });
     res.json({ listing, seoReport, generatedAt: Date.now() });
   } catch (err) {
     res.status(500).json({ error: String(err) });
