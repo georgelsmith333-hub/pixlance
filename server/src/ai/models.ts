@@ -5,6 +5,7 @@
  */
 
 const POLLINATIONS_BASE = "https://text.pollinations.ai";
+const RETRY_DELAY_MS = 1500;
 
 export const MODELS = {
   gpt4mini:   { id: "openai",            name: "GPT-4o Mini",       best: ["listing","title","seo","description"] },
@@ -58,6 +59,8 @@ export async function callAI(
       modelFailCount[modelId] = (modelFailCount[modelId] ?? 0) + 1;
       lastError = err as Error;
       console.warn(`[AI] Model ${modelId} failed: ${(err as Error).message}, trying next...`);
+      // Brief delay before trying next model to avoid burst rate-limiting
+      await new Promise(r => setTimeout(r, RETRY_DELAY_MS));
     }
   }
 
@@ -79,6 +82,7 @@ async function callModel(prompt: string, modelId: string, systemPrompt?: string)
     ],
     model: modelId,
     seed: Math.floor(Math.random() * 999999),
+    private: true,
   };
 
   const res = await fetch(POLLINATIONS_BASE, {
